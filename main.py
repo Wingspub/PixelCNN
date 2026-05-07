@@ -5,6 +5,7 @@ from torch.nn import functional as F
 import torch
 import numpy as np
 from time import time
+from model.PixelCNN import PixelCNN, MaskedConv2d
 
 traindata = datasets.MNIST(root="./dataset/data", train=True, download=True, transform=transforms.ToTensor())
 validdata = datasets.MNIST(root="./dataset/data", train=True, download=True, transform=transforms.ToTensor())
@@ -19,7 +20,7 @@ lr=1e-3
 valid_epoch_num = 5
 
 # model
-model = nn.Conv2d(1, 256, 7, 1, 3, bias=False).to(device)
+model = PixelCNN(1, 64, 256, 5).to(device)
 optimizer = optim.Adam(model.parameters(), lr=lr)
 loss_func = F.cross_entropy
 
@@ -60,13 +61,16 @@ def sample(model: nn.Module, sample_num: int, channel: int, height: int, width: 
 
     utils.save_image(sample_tensor, f'./result/sample_{epoch+1}.png', nrow=6, padding=0)
 
+
 for epoch in range(num_epoch):
     train_loss_list = []
+    s1 = time()
     for data, label in train_dataloader:
         loss = train(model, data)
         train_loss_list.append(loss)
+    s2 = time()
     trian_epoch_loss = np.mean(train_loss_list)
-    print(f"epoch:{epoch}, train_loss: {trian_epoch_loss:.6f}")
+    print(f"epoch:{epoch+1}, train_loss: {trian_epoch_loss:.6f}, time_cost:{s2-s1:.2f}s")
 
     if epoch % valid_epoch_num == 0:
         valid_loss_list = []
@@ -74,7 +78,8 @@ for epoch in range(num_epoch):
             loss = eval(model, data)
             valid_loss_list.append(loss)
         valid_epoch_loss = np.mean(valid_loss_list)
-        print(f"epoch:{epoch}, valid_loss: {valid_epoch_loss:.6f}")
+        print("==== test ===")
+        print(f"valid_loss: {valid_epoch_loss:.6f}")
 
         # image sample
         sample(model, 36, 1, 28, 28, epoch)
