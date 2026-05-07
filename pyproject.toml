@@ -1,0 +1,14 @@
+[project]
+name = "pixelcnn"
+version = "0.0.1"
+description = "pytorch implement for the method"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "torch>=2.11.0",
+    "torchvision>=0.26.0",
+]
+
+[[tool.uv.index]]
+url = "https://mirrors.aliyun.com/pypi/simple"
+default = true
