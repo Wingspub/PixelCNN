@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any
 from torch import nn
 from torch.nn import functional as F
 import torch
@@ -7,15 +7,15 @@ import torch
 class MaskedConv2d(nn.Conv2d):
     def __init__(self, mask_type: str, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.mask = torch.ones_like(self.weight.data)
         assert mask_type in {'A', 'B'}
         _, _, kernel_H, kernel_W = self.weight.size()
+        self.mask = nn.Buffer(torch.ones_like(self.weight.data))
         # mask right
         self.mask[:, :, kernel_H // 2, kernel_W // 2 + int(mask_type == "B"):] = 0
         # mask down
         self.mask[:, :, kernel_H // 2 + 1:] = 0
 
-    def forwad(self, x):
+    def forward(self, x):
         self.weight.data *= self.mask
         return super(MaskedConv2d, self).forward(x)
 
