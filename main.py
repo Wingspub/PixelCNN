@@ -5,22 +5,21 @@ from torch.nn import functional as F
 import torch
 import numpy as np
 from time import time
-from model.PixelCNN import PixelCNN, MaskedConv2d
+from model.PixelCNN import PixelCNN
 
 traindata = datasets.MNIST(root="./dataset/data", train=True, download=True, transform=transforms.ToTensor())
-validdata = datasets.MNIST(root="./dataset/data", train=True, download=True, transform=transforms.ToTensor())
+validdata = datasets.MNIST(root="./dataset/data", train=False, download=True, transform=transforms.ToTensor())
 
-train_dataloader = DataLoader(traindata, batch_size=32, shuffle=True)
-valid_dataloader = DataLoader(validdata, batch_size=32)
+train_dataloader = DataLoader(traindata, batch_size=128, shuffle=True, pin_memory=True)
+valid_dataloader = DataLoader(validdata, batch_size=32, pin_memory=True)
 
 # init
-num_epoch = 10
+num_epoch = 50
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr=1e-3
-valid_epoch_num = 5
 
 # model
-model = PixelCNN(1, 64, 256, 5).to(device)
+model = PixelCNN(1, 128, 256, 12).to(device)
 optimizer = optim.Adam(model.parameters(), lr=lr)
 loss_func = F.cross_entropy
 
@@ -32,9 +31,9 @@ def train(model: nn.Module, data: torch.Tensor) -> float:
     output = model(data)
 
     loss = loss_func(output, target)
+    optimizer.zero_grad()
     loss.backward()
     optimizer.step()
-    optimizer.zero_grad()
 
     return loss.cpu().item()
 
@@ -68,18 +67,18 @@ for epoch in range(num_epoch):
     for data, label in train_dataloader:
         loss = train(model, data)
         train_loss_list.append(loss)
-    s2 = time()
+    train_time = time() - s1
     trian_epoch_loss = np.mean(train_loss_list)
-    print(f"epoch:{epoch+1}, train_loss: {trian_epoch_loss:.6f}, time_cost:{s2-s1:.2f}s")
 
-    if epoch % valid_epoch_num == 0:
-        valid_loss_list = []
-        for data, label in valid_dataloader:
-            loss = eval(model, data)
-            valid_loss_list.append(loss)
-        valid_epoch_loss = np.mean(valid_loss_list)
-        print("==== test ===")
-        print(f"valid_loss: {valid_epoch_loss:.6f}")
+    valid_loss_list = []
+    s1 = time()
+    for data, label in valid_dataloader:
+        loss = eval(model, data)
+        valid_loss_list.append(loss)
+    valid_time = time() - s1
+    valid_epoch_loss = np.mean(valid_loss_list)
 
-        # image sample
-        sample(model, 36, 1, 28, 28, epoch)
+    print(f"epoch:{epoch+1}, trian NLL:{trian_epoch_loss:.4f}, train cost:{train_time:.2f}s, valid NLL:{valid_epoch_loss:.4f}, valid cost:{valid_time:.2f}s")
+
+    # image sample
+    sample(model, 36, 1, 28, 28, epoch)
