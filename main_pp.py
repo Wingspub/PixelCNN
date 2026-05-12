@@ -12,7 +12,7 @@ from model.PixelCNN import PixelCNN
 num_epoch = 200
 batch_size = 128
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-lr=1e-4
+lr=1e-3
 func_num_K = 10
 
 rescaling     = lambda x : (x - .5) * 2.
